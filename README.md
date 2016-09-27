@@ -1,0 +1,26 @@
+
+# Aggregate ticket count monitoring app for Zendesk instances
+
+This code monitors aggregate ticket counts in specified views in a specified Zendesk instance and emails relevant notifications. It’s run as a chron job on a server independent of Zendesk. You configure the monitoring of views with a simple, domain-specific configuration language. 
+
+You can configure this code to email alerts when the total number of tickets in a Zendesk view is less than or greater than a threshold value. Alternately, you can configure the monitoring so that a report is periodically sent on the number of tickets in the view. You can similarly monitor multiple views within a single Zendesk instance. For each view monitoring specification, you can independently set monitoring types and schedules. You also can set, for each view monitoring specification, recipients and subject text for the email alert/report.
+
+The simplest use case for this code would be to email an alert if the number of tickets received of a particular type in the past hour was greater than NUM. You would set up a Zendesk view showing the number of tickets of that type received in the past hour. You would then configure the monitoring code to read the number of total tickets in that view in your Zendesk instance and, if above NUM, send the customized alert to the specified email addresses.
+
+Procedural requirements for using this code:
+
+1.	Establish a Zendesk agent with API access to the relevant view counts in your specific Zendesk instance. Using a custom Zendesk agent with minimum necessary privilege (less than a Light Agent) is a good security practice. You specify your Zendesk instance URL and Zendesk API agent email in DATASOURCE_CONFIG in monitor_configuration.rb You specify your Zendesk API agent’s API key (token) preferably through the environment variable ZD_KEY. Alternatively, you can store your API key in a plain-text file (specified by setting key_location key in DATASOURCE_CONFIG). If you use a key file, Git should be set to ignore it (via .gitignore) so that the key file isn’t included in your version-controlled repository. Under a POSIX server, use of an environment variable to store the API key is straightforward. Run the bash command:
+export ZD_KEY='xxxx'
+where xxxx represents your specific Zendesk API key. Make sure the views to be monitored are accessible (shared with) the agent the monitor uses to access your Zendesk instance.
+
+2.	Set your specific monitoring configuration parameters in the relevant Ruby hashes. These hashes are in monitor_configuration.rb For each view monitoring specification, you must specify the view ID in your Zendesk instance, the relevant test and thresholds for your circumstances, and the relevant email addresses to receive the alert or report. In addition, MONITOR_CONFIG includes an admin email specification. That email receives error messages and notices of monitoring failures. All email specifications allow multiple email addresses. You can include the admin email in each of the view monitoring specifications if you want the admin to receive a copy of any email that the monitoring app sends.
+
+3.	Establish an email service that works on the service / server you use to run the chron job. The code is currently set up to use Sendgrid to send email. To use Sendgrid, you need to establish an account with Sendgrid and get an API key for sending email. The preferred method for communicating the Sendgrid API key to this app is via an environment variable. Following the example above, the Sendgrid API key would be set with the bash command:
+export SENDGRID_API_KEY=’xxxx’ 
+where xxxx represents your specific Sendgrid API key. Using a different mailer requires some additional mailer-specific code. You would create a new child class of Mailer in mailers.rb and write the approporiate code for the emailer that you want to use.
+
+4.	Set up chron_runner.rb to be executed as an hourly chron job. Different services / servers have different ways of setting up a chron job. You have to figure out how to establish the chron job yourself. Before putting the chron job in operation, run chron_runner_test.rb to validate the monitoring configuration and to test reading view counts from the Zendesk instance and sending alert emails. If your monitoring specification is invalid, chron_runner_test will produce a message to the console indicating the problem. Chron_runner_test will attempt to send a test alert message through your email service, and will echo that email to the terminal. It will verify that the code can read the view counts from all the views for which you have established monitoring specifications. Then it will run all your monitoring specifications and send any alerts to the console. Chron_runner_test can help identify problems with your set-up. But after you deploy chron_runner, you should also periodically check your server logs to ensure that the job is running as expected and without errors.
+
+This is not a click-to-use app. You need some information-technology expertise to set-up, install, and run this monitoring code for your Zendesk instance.
+
+Written by Douglas Galbi, Federal Communications Commission, U.S.
