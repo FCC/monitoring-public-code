@@ -107,7 +107,7 @@ class MonitorCounts
       active = true
       if 'day' == freq_spec[0]
         active = (datetime.yday % freq_spec[1]) == 0
-        active &&= ( (datetime.hour - offset) % freq_spec[1]) == 0
+        active &&= (datetime.hour - offset) == 0
       elsif 'hour' == freq_spec[0]
         active = ( (datetime.hour - offset) % freq_spec[1]) == 0
       end
